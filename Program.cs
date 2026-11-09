@@ -4,6 +4,8 @@ using TasinmazYonetimi.Data;
 using TasinmazYonetimi.Interfaces;
 using TasinmazYonetimi.Mappings;
 using TasinmazYonetimi.Services;
+using Microsoft.AspNetCore.Identity;
+using TasinmazYonetimi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +30,12 @@ builder.Services.AddAutoMapper(
 builder.Services.AddScoped<IIlService, IlService>();
 builder.Services.AddScoped<IIlceService, IlceService>();
 builder.Services.AddScoped<IMahalleService, MahalleService>();
+builder.Services.AddScoped<ITasinmazService, TasinmazService>();
+builder.Services.AddScoped<IKullaniciService, KullaniciService>();
+
+builder.Services.AddScoped<
+    IPasswordHasher<Kullanicilar>,
+    PasswordHasher<Kullanicilar>>();
 
 var app = builder.Build();
 
