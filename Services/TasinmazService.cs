@@ -37,7 +37,7 @@ namespace TasinmazYonetimi.Services
             return _mapper.Map<List<TasinmazDto>>(tasinmazlar);
         }
 
-        // ID sini girdiğimiz taşınmazı getir göre taşınmaz getir
+        // ID sini girdiğimiz taşınmazı getir 
         public async Task<TasinmazDto?> GetByIdAsync(
             int id, int kullaniciId)
         {
