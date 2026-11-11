@@ -39,6 +39,7 @@ builder.Services.AddScoped<
     IPasswordHasher<Kullanicilar>,
     PasswordHasher<Kullanicilar>>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ILogService, LogService>();
 
 
 
