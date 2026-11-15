@@ -29,6 +29,7 @@ builder.Services.AddAutoMapper(
     typeof(MappingProfile));
 
 // Uygulama servisleri
+//"Bir yerde IIlService istenirse IlService sınıfını kullan."
 builder.Services.AddScoped<IIlService, IlService>();
 builder.Services.AddScoped<IIlceService, IlceService>();
 builder.Services.AddScoped<IMahalleService, MahalleService>();
