@@ -1,5 +1,6 @@
 ﻿
 using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using TasinmazYonetimi.Data;
 using TasinmazYonetimi.DTOs;
@@ -12,13 +13,26 @@ namespace TasinmazYonetimi.Services
     {
         private readonly TasinmazYonetimiContext _context;
         private readonly IMapper _mapper;
+        private readonly ILogService _logService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public TasinmazService(
             TasinmazYonetimiContext context,
-            IMapper mapper)
+            IMapper mapper,
+            ILogService logService,
+            IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
             _mapper = mapper;
+            _logService = logService;
+            _httpContextAccessor = httpContextAccessor;
+        }
+
+        // İstek yapan kullanıcının IP adresi
+        private string? GetKullaniciIp()
+        {
+            return _httpContextAccessor.HttpContext?
+                .Connection.RemoteIpAddress?.ToString();
         }
 
         // Kullanıcının taşınmazlarını getir
@@ -37,7 +51,7 @@ namespace TasinmazYonetimi.Services
             return _mapper.Map<List<TasinmazDto>>(tasinmazlar);
         }
 
-        // ID sini girdiğimiz taşınmazı getir 
+        // ID'ye göre taşınmaz getir
         public async Task<TasinmazDto?> GetByIdAsync(
             int id, int kullaniciId)
         {
@@ -68,12 +82,18 @@ namespace TasinmazYonetimi.Services
                     "Seçilen mahalle bulunamadı.");
 
             var tasinmaz = _mapper.Map<Tasinmazlar>(dto);
-
             tasinmaz.KullaniciId = kullaniciId;
 
             _context.Set<Tasinmazlar>().Add(tasinmaz);
-
             await _context.SaveChangesAsync();
+
+            // Başarılı ekleme işlemini logla
+            await _logService.AddLogAsync(
+                kullaniciId,
+                "Yeni Kayıt",
+                "Basarili",
+                $"ID: {tasinmaz.Id} olan taşınmaz eklendi.",
+                GetKullaniciIp());
 
             return (await GetByIdAsync(
                 tasinmaz.Id, kullaniciId))!;
@@ -104,6 +124,14 @@ namespace TasinmazYonetimi.Services
 
             await _context.SaveChangesAsync();
 
+            // Başarılı güncelleme işlemini logla
+            await _logService.AddLogAsync(
+                kullaniciId,
+                "Güncelleme",
+                "Basarili",
+                $"ID: {id} olan taşınmaz güncellendi.",
+                GetKullaniciIp());
+
             return true;
         }
 
@@ -120,8 +148,15 @@ namespace TasinmazYonetimi.Services
                 return false;
 
             _context.Set<Tasinmazlar>().Remove(tasinmaz);
-
             await _context.SaveChangesAsync();
+
+            // Başarılı silme işlemini logla
+            await _logService.AddLogAsync(
+                kullaniciId,
+                "Silme",
+                "Basarili",
+                $"ID: {id} olan taşınmaz silindi.",
+                GetKullaniciIp());
 
             return true;
         }

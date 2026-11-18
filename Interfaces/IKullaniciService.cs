@@ -15,5 +15,7 @@ namespace TasinmazYonetimi.Interfaces
             int id, KullaniciUpdateDto dto);
 
         Task<bool> DeleteAsync(int id);
+        Task<bool> UpdateProfilAsync(
+    int kullaniciId, ProfilUpdateDto dto);
     }
 }

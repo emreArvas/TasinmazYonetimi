@@ -115,5 +115,34 @@ namespace TasinmazYonetimi.Services
 
             return true;
         }
+
+        public async Task<bool> UpdateProfilAsync(
+            int kullaniciId, ProfilUpdateDto dto)
+        {
+            var kullanici = await _context.Set<Kullanicilar>()
+                .FirstOrDefaultAsync(k => k.Id == kullaniciId);
+
+            if (kullanici == null)
+                return false;
+
+            var emailVarMi = await _context.Set<Kullanicilar>()
+                .AnyAsync(k =>
+                    k.Email == dto.Email &&
+                    k.Id != kullaniciId);
+
+            if (emailVarMi)
+                throw new ArgumentException(
+                    "Bu e-posta adresi başka bir kullanıcıya ait.");
+
+            kullanici.Ad = dto.Ad;
+            kullanici.Soyad = dto.Soyad;
+            kullanici.Email = dto.Email;
+            kullanici.Adres = dto.Adres;
+
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+
     }
 }
