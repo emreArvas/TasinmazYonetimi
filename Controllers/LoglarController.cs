@@ -57,6 +57,19 @@ namespace TasinmazYonetimi.Controllers
             return Ok(sonuc);
         }
 
+        // Filtreye uyan logları Excel olarak indir
+        [HttpGet("excel")]
+        public async Task<IActionResult> ExportExcel(
+            [FromQuery] LogFilterDto filter)
+        {
+            var dosya = await _logService.ExcelOlusturAsync(filter);
+
+            return File(
+                dosya,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"Loglar_{DateTime.Now:yyyyMMdd_HHmm}.xlsx");
+        }
+
         // Durum listesi (Başarılı / Başarısız)
         [HttpGet("durumlar")]
         public async Task<IActionResult> GetDurumlar()

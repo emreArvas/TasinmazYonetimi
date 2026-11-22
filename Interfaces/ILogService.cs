@@ -13,6 +13,8 @@ namespace TasinmazYonetimi.Interfaces
         Task<PagedResultDto<LogDto>> GetFilteredAsync(
             LogFilterDto filter);
 
+        Task<byte[]> ExcelOlusturAsync(LogFilterDto filter);
+
         Task<List<Durumlar>> GetDurumlarAsync();
 
         Task<List<IslemTipleri>> GetIslemTipleriAsync();

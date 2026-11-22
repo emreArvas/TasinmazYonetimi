@@ -12,13 +12,16 @@ namespace TasinmazYonetimi.Services
     {
         private readonly TasinmazYonetimiContext _context;
         private readonly IMapper _mapper;
+        private readonly IExcelService _excelService;
 
         public LogService(
             TasinmazYonetimiContext context,
-            IMapper mapper)
+            IMapper mapper,
+            IExcelService excelService)
         {
             _context = context;
             _mapper = mapper;
+            _excelService = excelService;
         }
 
         // Bütün log kayıtlarını getir
@@ -131,6 +134,32 @@ namespace TasinmazYonetimi.Services
                 PageNumber = pageNumber,
                 PageSize = pageSize
             };
+        }
+
+        // Filtreye uyan bütün logları Excel'e aktar (sayfalama yok)
+        public async Task<byte[]> ExcelOlusturAsync(LogFilterDto filter)
+        {
+            var loglar = await FiltreliSorgu(filter)
+                .Include(l => l.Durum)
+                .Include(l => l.IslemTipi)
+                .Include(l => l.Kullanici)
+                .OrderByDescending(l => l.TarihSaat)
+                .ToListAsync();
+
+            var kayitlar = _mapper.Map<List<LogDto>>(loglar);
+
+            return _excelService.Olustur<LogDto>(
+                "Loglar",
+                kayitlar,
+                ("ID", l => l.Id),
+                ("Tarih Saat", l => l.TarihSaat.ToLocalTime()
+                    .ToString("dd.MM.yyyy HH:mm:ss")),
+                ("Kullanıcı ID", l => l.KullaniciId),
+                ("Kullanıcı E-posta", l => l.KullaniciEmail),
+                ("İşlem Tipi", l => l.IslemTipiAdi),
+                ("Durum", l => l.DurumAdi),
+                ("Açıklama", l => l.Aciklama),
+                ("Kullanıcı IP", l => l.KullaniciIp));
         }
 
         // Filtre combobox'ları için durum listesi
