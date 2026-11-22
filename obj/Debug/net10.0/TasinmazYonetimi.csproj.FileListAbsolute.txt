@@ -137,3 +137,11 @@ C:\Users\EMRE\Desktop\TasinmazYonetimi\TasinmazYonetimi\bin\Debug\net10.0\Swashb
 C:\Users\EMRE\Desktop\TasinmazYonetimi\TasinmazYonetimi\bin\Debug\net10.0\Swashbuckle.AspNetCore.SwaggerGen.dll
 C:\Users\EMRE\Desktop\TasinmazYonetimi\TasinmazYonetimi\bin\Debug\net10.0\Swashbuckle.AspNetCore.SwaggerUI.dll
 C:\Users\EMRE\Desktop\TasinmazYonetimi\TasinmazYonetimi\obj\Debug\net10.0\TasinmazYonetimi.xml
+C:\Users\EMRE\Desktop\TasinmazYonetimi\TasinmazYonetimi\bin\Debug\net10.0\ClosedXML.dll
+C:\Users\EMRE\Desktop\TasinmazYonetimi\TasinmazYonetimi\bin\Debug\net10.0\ClosedXML.Parser.dll
+C:\Users\EMRE\Desktop\TasinmazYonetimi\TasinmazYonetimi\bin\Debug\net10.0\DocumentFormat.OpenXml.dll
+C:\Users\EMRE\Desktop\TasinmazYonetimi\TasinmazYonetimi\bin\Debug\net10.0\DocumentFormat.OpenXml.Framework.dll
+C:\Users\EMRE\Desktop\TasinmazYonetimi\TasinmazYonetimi\bin\Debug\net10.0\ExcelNumberFormat.dll
+C:\Users\EMRE\Desktop\TasinmazYonetimi\TasinmazYonetimi\bin\Debug\net10.0\RBush.dll
+C:\Users\EMRE\Desktop\TasinmazYonetimi\TasinmazYonetimi\bin\Debug\net10.0\SixLabors.Fonts.dll
+C:\Users\EMRE\Desktop\TasinmazYonetimi\TasinmazYonetimi\bin\Debug\net10.0\System.IO.Packaging.dll

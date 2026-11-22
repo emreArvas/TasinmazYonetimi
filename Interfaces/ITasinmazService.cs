@@ -26,5 +26,9 @@ namespace TasinmazYonetimi.Interfaces
             TasinmazFilterDto filter,
             int kullaniciId);
 
+        Task<byte[]> ExcelOlusturAsync(
+            TasinmazFilterDto filter,
+            int kullaniciId);
+
     }
 }

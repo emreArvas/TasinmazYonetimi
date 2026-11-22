@@ -50,6 +50,7 @@ builder.Services.AddScoped<
     PasswordHasher<Kullanicilar>>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ILogService, LogService>();
+builder.Services.AddScoped<IExcelService, ExcelService>();
 
 
 

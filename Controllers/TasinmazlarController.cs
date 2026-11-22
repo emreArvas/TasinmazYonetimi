@@ -172,6 +172,25 @@ namespace TasinmazYonetimi.Controllers
             return NoContent();
         }
 
+        // Filtreye uyan taşınmazları Excel olarak indir
+        [HttpGet("excel")]
+        public async Task<IActionResult> ExportExcel(
+            [FromQuery] TasinmazFilterDto filter)
+        {
+            var kullaniciId = GetKullaniciId();
+
+            if (kullaniciId == null)
+                return Unauthorized();
+
+            var dosya = await _tasinmazService.ExcelOlusturAsync(
+                filter, kullaniciId.Value);
+
+            return File(
+                dosya,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"Tasinmazlar_{DateTime.Now:yyyyMMdd_HHmm}.xlsx");
+        }
+
         // Taşınmazları filtrele ve sayfala
         [HttpGet("filtrele")]
         public async Task<ActionResult<PagedResultDto<TasinmazDto>>> GetFiltered(

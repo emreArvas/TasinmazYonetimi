@@ -16,17 +16,20 @@ namespace TasinmazYonetimi.Services
         private readonly IMapper _mapper;
         private readonly ILogService _logService;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IExcelService _excelService;
 
         public TasinmazService(
             TasinmazYonetimiContext context,
             IMapper mapper,
             ILogService logService,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IExcelService excelService)
         {
             _context = context;
             _mapper = mapper;
             _logService = logService;
             _httpContextAccessor = httpContextAccessor;
+            _excelService = excelService;
         }
 
         // İstek yapan kullanıcının IP adresini getir
@@ -278,8 +281,8 @@ namespace TasinmazYonetimi.Services
             return true;
         }
 
-        // 6. Taşınmazları filtrele ve sayfala
-        public async Task<PagedResultDto<TasinmazDto>> GetFilteredAsync(
+        // Ortak filtre sorgusu (liste ve Excel aynı filtreyi kullanır)
+        private IQueryable<Tasinmazlar> FiltreliSorgu(
             TasinmazFilterDto filter,
             int kullaniciId)
         {
@@ -368,6 +371,17 @@ namespace TasinmazYonetimi.Services
                 query = query.Where(t => t.KayitTarihi < bitis);
             }
 
+            return query;
+        }
+
+        // 6. Taşınmazları filtrele ve sayfala
+        public async Task<PagedResultDto<TasinmazDto>> GetFilteredAsync(
+            TasinmazFilterDto filter,
+            int kullaniciId)
+        {
+            // Ortak filtreler uygulanmış sorgu
+            var query = FiltreliSorgu(filter, kullaniciId);
+
             // Sayfalama öncesinde toplam kayıt sayısı
             var totalCount = await query.CountAsync();
 
@@ -394,5 +408,33 @@ namespace TasinmazYonetimi.Services
             };
         }
 
+        // 8. Filtreye uyan bütün taşınmazları Excel'e aktar (sayfalama yok)
+        public async Task<byte[]> ExcelOlusturAsync(
+            TasinmazFilterDto filter, int kullaniciId)
+        {
+            var tasinmazlar = await FiltreliSorgu(filter, kullaniciId)
+                .Include(t => t.Mahalle)
+                    .ThenInclude(m => m.Ilce)
+                    .ThenInclude(i => i.Il)
+                .OrderBy(t => t.Id)
+                .ToListAsync();
+
+            var kayitlar = _mapper.Map<List<TasinmazDto>>(tasinmazlar);
+
+            return _excelService.Olustur<TasinmazDto>(
+                "Taşınmazlar",
+                kayitlar,
+                ("ID", t => t.Id),
+                ("İl", t => t.IlAdi),
+                ("İlçe", t => t.IlceAdi),
+                ("Mahalle", t => t.MahalleAdi),
+                ("Ada", t => t.Ada),
+                ("Parsel", t => t.Parsel),
+                ("Nitelik", t => t.Nitelik),
+                ("Enlem", t => t.Enlem),
+                ("Boylam", t => t.Boylam),
+                ("Kayıt Tarihi", t => t.KayitTarihi.ToLocalTime()
+                    .ToString("dd.MM.yyyy HH:mm")));
+        }
     }
 }
