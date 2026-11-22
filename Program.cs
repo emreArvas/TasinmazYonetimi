@@ -8,6 +8,7 @@ using TasinmazYonetimi.Mappings;
 using TasinmazYonetimi.Services;
 using Microsoft.AspNetCore.Identity;
 using TasinmazYonetimi.Models;
+using TasinmazYonetimi.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +22,12 @@ builder.Services.AddDbContext<TasinmazYonetimiContext>(
     options => options.UseNpgsql(connectionString));
 
 builder.Services.AddControllers();
-builder.Services.AddOpenApi();
+
+// Swagger UI
+builder.Services.AddSwaggerDocumentation();
+
+// Angular için CORS
+builder.Services.AddFrontendCors(builder.Configuration);
 
 // Auto mapper servisi
 builder.Services.AddAutoMapper(
@@ -97,10 +103,24 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint(
+            "/swagger/v1/swagger.json",
+            "Taşınmaz Yönetimi API v1");
+
+        options.DocumentTitle = "Taşınmaz Yönetimi API";
+
+        // Sayfa yenilenince token silinmesin
+        options.EnablePersistAuthorization();
+    });
 }
 
 app.UseHttpsRedirection();
+
+// Sıra önemli: CORS, kimlik doğrulamadan önce gelmeli
+app.UseCors(ServiceExtensions.FrontendCorsPolicy);
 
 app.UseAuthentication();
 app.UseAuthorization();
