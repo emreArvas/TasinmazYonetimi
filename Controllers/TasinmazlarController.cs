@@ -144,6 +144,34 @@ namespace TasinmazYonetimi.Controllers
         }
 
 
+        // Birden fazla taşınmaz sil
+        [HttpDelete]
+        public async Task<IActionResult> DeleteMany(
+            [FromQuery] List<int> ids)
+        {
+            var kullaniciId = GetKullaniciId();
+
+            if (kullaniciId == null)
+                return Unauthorized();
+
+            if (ids == null || ids.Count == 0)
+                return BadRequest(new
+                {
+                    message = "Silinecek taşınmaz seçilmedi."
+                });
+
+            var basarili = await _tasinmazService.DeleteManyAsync(
+                ids, kullaniciId.Value);
+
+            if (!basarili)
+                return NotFound(new
+                {
+                    message = "Seçilen taşınmazlardan bazıları bulunamadı."
+                });
+
+            return NoContent();
+        }
+
         // Taşınmazları filtrele ve sayfala
         [HttpGet("filtrele")]
         public async Task<ActionResult<PagedResultDto<TasinmazDto>>> GetFiltered(

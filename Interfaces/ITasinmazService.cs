@@ -19,6 +19,9 @@ namespace TasinmazYonetimi.Interfaces
         Task<bool> DeleteAsync(
             int id, int kullaniciId);
 
+        Task<bool> DeleteManyAsync(
+            List<int> ids, int kullaniciId);
+
         Task<PagedResultDto<TasinmazDto>> GetFilteredAsync(
             TasinmazFilterDto filter,
             int kullaniciId);

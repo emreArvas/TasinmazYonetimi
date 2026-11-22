@@ -233,6 +233,51 @@ namespace TasinmazYonetimi.Services
             return true;
         }
 
+        // 7. Birden fazla taşınmazı sil (hepsi kullanıcıya ait olmalı)
+        public async Task<bool> DeleteManyAsync(
+            List<int> ids, int kullaniciId)
+        {
+            var benzersizIdler = ids.Distinct().ToList();
+
+            var tasinmazlar = await _context.Set<Tasinmazlar>()
+                .Where(t =>
+                    benzersizIdler.Contains(t.Id) &&
+                    t.KullaniciId == kullaniciId)
+                .ToListAsync();
+
+            var idMetni = string.Join(", ", benzersizIdler);
+
+            // Bir tanesi bile bulunamazsa hiçbiri silinmez
+            if (tasinmazlar.Count != benzersizIdler.Count)
+            {
+                await _logService.AddLogAsync(
+                    kullaniciId,
+                    IslemTipleriSabit.Silme,
+                    DurumlarSabit.Basarisiz,
+                    $"Toplu silme yapılamadı. ID: {idMetni} içinde bulunamayan veya kullanıcıya ait olmayan kayıt var.",
+                    GetKullaniciIp());
+
+                return false;
+            }
+
+            await using var transaction =
+                await _context.Database.BeginTransactionAsync();
+
+            _context.Set<Tasinmazlar>().RemoveRange(tasinmazlar);
+            await _context.SaveChangesAsync();
+
+            await _logService.AddLogAsync(
+                kullaniciId,
+                IslemTipleriSabit.Silme,
+                DurumlarSabit.Basarili,
+                $"ID: {idMetni} olan taşınmazlar silindi.",
+                GetKullaniciIp());
+
+            await transaction.CommitAsync();
+
+            return true;
+        }
+
         // 6. Taşınmazları filtrele ve sayfala
         public async Task<PagedResultDto<TasinmazDto>> GetFilteredAsync(
             TasinmazFilterDto filter,
@@ -290,6 +335,37 @@ namespace TasinmazYonetimi.Services
 
                 query = query.Where(t =>
                     t.Nitelik == nitelik);
+            }
+
+            // Koordinat filtreleri
+            if (filter.MinEnlem.HasValue)
+                query = query.Where(t => t.Enlem >= filter.MinEnlem.Value);
+
+            if (filter.MaxEnlem.HasValue)
+                query = query.Where(t => t.Enlem <= filter.MaxEnlem.Value);
+
+            if (filter.MinBoylam.HasValue)
+                query = query.Where(t => t.Boylam >= filter.MinBoylam.Value);
+
+            if (filter.MaxBoylam.HasValue)
+                query = query.Where(t => t.Boylam <= filter.MaxBoylam.Value);
+
+            // Kayıt tarihi filtreleri
+            if (filter.BaslangicTarihi.HasValue)
+            {
+                var baslangic = DateTime.SpecifyKind(
+                    filter.BaslangicTarihi.Value.Date, DateTimeKind.Utc);
+
+                query = query.Where(t => t.KayitTarihi >= baslangic);
+            }
+
+            if (filter.BitisTarihi.HasValue)
+            {
+                // Bitiş gününü de dahil etmek için ertesi günün başına kadar
+                var bitis = DateTime.SpecifyKind(
+                    filter.BitisTarihi.Value.Date.AddDays(1), DateTimeKind.Utc);
+
+                query = query.Where(t => t.KayitTarihi < bitis);
             }
 
             // Sayfalama öncesinde toplam kayıt sayısı
