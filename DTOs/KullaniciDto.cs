@@ -8,5 +8,6 @@
         public string Email { get; set; } = string.Empty;
         public string? Adres { get; set; }
         public int RolId { get; set; }
+        public string? RolAdi { get; set; }
     }
 }

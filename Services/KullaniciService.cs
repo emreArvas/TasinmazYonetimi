@@ -255,6 +255,113 @@ namespace TasinmazYonetimi.Services
             return true;
         }
 
+        // Kullanıcıları filtrele ve sayfala
+        public async Task<PagedResultDto<KullaniciDto>> GetFilteredAsync(
+            KullaniciFilterDto filter)
+        {
+            var query = _context.Set<Kullanicilar>()
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(filter.Ad))
+            {
+                var ad = $"%{filter.Ad.Trim()}%";
+                query = query.Where(k => EF.Functions.ILike(k.Ad, ad));
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter.Soyad))
+            {
+                var soyad = $"%{filter.Soyad.Trim()}%";
+                query = query.Where(k => EF.Functions.ILike(k.Soyad, soyad));
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter.Email))
+            {
+                var email = $"%{filter.Email.Trim()}%";
+                query = query.Where(k => EF.Functions.ILike(k.Email, email));
+            }
+
+            if (filter.RolId.HasValue)
+                query = query.Where(k => k.RolId == filter.RolId.Value);
+
+            var totalCount = await query.CountAsync();
+
+            var pageNumber = Math.Max(1, filter.PageNumber);
+            var pageSize = Math.Clamp(filter.PageSize, 1, 100);
+
+            var kullanicilar = await query
+                .OrderBy(k => k.Id)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Include(k => k.Rol)
+                .ToListAsync();
+
+            return new PagedResultDto<KullaniciDto>
+            {
+                Items = _mapper.Map<List<KullaniciDto>>(kullanicilar),
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+        }
+
+        // Birden fazla kullanıcı sil (hepsi silinebilir olmalı)
+        public async Task<bool> DeleteManyAsync(List<int> ids)
+        {
+            var benzersizIdler = ids.Distinct().ToList();
+            var idMetni = string.Join(", ", benzersizIdler);
+
+            var kullanicilar = await _context.Set<Kullanicilar>()
+                .Where(k => benzersizIdler.Contains(k.Id))
+                .ToListAsync();
+
+            if (kullanicilar.Count != benzersizIdler.Count)
+            {
+                await LogYazAsync(
+                    IslemTipleriSabit.Silme,
+                    DurumlarSabit.Basarisiz,
+                    $"Toplu kullanıcı silme yapılamadı. ID: {idMetni} içinde bulunamayan kayıt var.");
+
+                return false;
+            }
+
+            var girisYapanId = GetGirisYapanId();
+
+            if (girisYapanId.HasValue && benzersizIdler.Contains(girisYapanId.Value))
+            {
+                await LogYazAsync(
+                    IslemTipleriSabit.Silme,
+                    DurumlarSabit.Basarisiz,
+                    "Toplu silmede kullanıcı kendi hesabını silmeye çalıştı.");
+
+                throw new ArgumentException("Seçilenler arasında kendi hesabınız var.");
+            }
+
+            var tasinmaziOlanVarMi = await _context.Set<Tasinmazlar>()
+                .AnyAsync(t => benzersizIdler.Contains(t.KullaniciId));
+
+            if (tasinmaziOlanVarMi)
+            {
+                await LogYazAsync(
+                    IslemTipleriSabit.Silme,
+                    DurumlarSabit.Basarisiz,
+                    $"Toplu kullanıcı silme yapılamadı. ID: {idMetni} içinde taşınmazı olan kullanıcı var.");
+
+                throw new ArgumentException(
+                    "Seçilenler arasında taşınmazı olan kullanıcı var.");
+            }
+
+            _context.Set<Kullanicilar>().RemoveRange(kullanicilar);
+            await _context.SaveChangesAsync();
+
+            await LogYazAsync(
+                IslemTipleriSabit.Silme,
+                DurumlarSabit.Basarili,
+                $"ID: {idMetni} olan kullanıcılar silindi.");
+
+            return true;
+        }
+
         // Rol combobox'ı için rol listesi
         public async Task<List<Roller>> GetRollerAsync()
         {

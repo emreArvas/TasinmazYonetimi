@@ -124,6 +124,39 @@ namespace TasinmazYonetimi.Controllers
             }
         }
 
+        // Kullanıcıları filtrele ve sayfala
+        [HttpGet("filtrele")]
+        public async Task<ActionResult<PagedResultDto<KullaniciDto>>> GetFiltered(
+            [FromQuery] KullaniciFilterDto filter)
+        {
+            var sonuc = await _kullaniciService.GetFilteredAsync(filter);
+
+            return Ok(sonuc);
+        }
+
+        // Birden fazla kullanıcı sil
+        [HttpDelete]
+        public async Task<IActionResult> DeleteMany(
+            [FromQuery] List<int> ids)
+        {
+            if (ids == null || ids.Count == 0)
+                return BadRequest(new { message = "Silinecek kullanıcı seçilmedi." });
+
+            try
+            {
+                var basarili = await _kullaniciService.DeleteManyAsync(ids);
+
+                if (!basarili)
+                    return NotFound(new { message = "Seçilen kullanıcılardan bazıları bulunamadı." });
+
+                return NoContent();
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         // Rol listesi (Admin / Kullanici)
         [HttpGet("roller")]
         public async Task<IActionResult> GetRoller()

@@ -9,7 +9,10 @@ namespace TasinmazYonetimi.Mappings
         public MappingProfile()
         {
             
-            CreateMap<Kullanicilar, KullaniciDto>();
+            CreateMap<Kullanicilar, KullaniciDto>()
+                .ForMember(
+                    dest => dest.RolAdi,
+                    opt => opt.MapFrom(src => src.Rol.RolAdi));
 
             CreateMap<KullaniciCreateDto, Kullanicilar>(
                 MemberList.None)

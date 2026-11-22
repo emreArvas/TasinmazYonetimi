@@ -18,6 +18,11 @@ namespace TasinmazYonetimi.Interfaces
         Task<bool> DeleteAsync(int id);
 
         Task<List<Roller>> GetRollerAsync();
+
+        Task<PagedResultDto<KullaniciDto>> GetFilteredAsync(
+            KullaniciFilterDto filter);
+
+        Task<bool> DeleteManyAsync(List<int> ids);
         Task<bool> UpdateProfilAsync(
     int kullaniciId, ProfilUpdateDto dto);
     }
