@@ -30,6 +30,8 @@ public partial class TasinmazYonetimiContext : DbContext
 
     public virtual DbSet<Tasinmazlar> Tasinmazlars { get; set; }
 
+    public virtual DbSet<IptalEdilenTokenlar> IptalEdilenTokenlars { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Durumlar>(entity =>
@@ -182,6 +184,15 @@ public partial class TasinmazYonetimiContext : DbContext
                 .HasForeignKey(d => d.MahalleId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Tasinmazlar_Mahalleler");
+        });
+
+        modelBuilder.Entity<IptalEdilenTokenlar>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.ToTable("IptalEdilenTokenlar");
+            entity.HasIndex(e => e.TokenId).IsUnique();
+            entity.Property(e => e.Id).UseIdentityAlwaysColumn();
+            entity.Property(e => e.TokenId).HasMaxLength(100);
         });
 
         OnModelCreatingPartial(modelBuilder);

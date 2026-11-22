@@ -2,6 +2,7 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using TasinmazYonetimi.Constants;
 using TasinmazYonetimi.Data;
 using TasinmazYonetimi.DTOs;
 using TasinmazYonetimi.Interfaces;
@@ -83,8 +84,8 @@ namespace TasinmazYonetimi.Services
             {
                 await _logService.AddLogAsync(
                     kullaniciId,
-                    "Yeni Kayıt",
-                    "Basarisiz",
+                    IslemTipleriSabit.YeniKayit,
+                    DurumlarSabit.Basarisiz,
                     $"Taşınmaz eklenemedi. Mahalle ID: {dto.MahalleId} bulunamadı.",
                     GetKullaniciIp());
 
@@ -108,8 +109,8 @@ namespace TasinmazYonetimi.Services
             // Başarılı ekleme logu
             await _logService.AddLogAsync(
                 kullaniciId,
-                "Yeni Kayıt",
-                "Basarili",
+                IslemTipleriSabit.YeniKayit,
+                DurumlarSabit.Basarili,
                 $"ID: {tasinmaz.Id} olan taşınmaz eklendi.",
                 GetKullaniciIp());
 
@@ -137,8 +138,8 @@ namespace TasinmazYonetimi.Services
             {
                 await _logService.AddLogAsync(
                     kullaniciId,
-                    "Güncelleme",
-                    "Basarisiz",
+                    IslemTipleriSabit.Guncelleme,
+                    DurumlarSabit.Basarisiz,
                     $"Taşınmaz güncellenemedi. ID: {id} bulunamadı veya kullanıcıya ait değil.",
                     GetKullaniciIp());
 
@@ -154,8 +155,8 @@ namespace TasinmazYonetimi.Services
             {
                 await _logService.AddLogAsync(
                     kullaniciId,
-                    "Güncelleme",
-                    "Basarisiz",
+                    IslemTipleriSabit.Guncelleme,
+                    DurumlarSabit.Basarisiz,
                     $"Taşınmaz güncellenemedi. Mahalle ID: {dto.MahalleId} bulunamadı.",
                     GetKullaniciIp());
 
@@ -175,8 +176,8 @@ namespace TasinmazYonetimi.Services
             // Başarılı güncelleme logu
             await _logService.AddLogAsync(
                 kullaniciId,
-                "Güncelleme",
-                "Basarili",
+                IslemTipleriSabit.Guncelleme,
+                DurumlarSabit.Basarili,
                 $"ID: {id} olan taşınmaz güncellendi.",
                 GetKullaniciIp());
 
@@ -201,8 +202,8 @@ namespace TasinmazYonetimi.Services
             {
                 await _logService.AddLogAsync(
                     kullaniciId,
-                    "Silme",
-                    "Basarisiz",
+                    IslemTipleriSabit.Silme,
+                    DurumlarSabit.Basarisiz,
                     $"Taşınmaz silinemedi. ID: {id} bulunamadı veya kullanıcıya ait değil.",
                     GetKullaniciIp());
 
@@ -221,8 +222,8 @@ namespace TasinmazYonetimi.Services
             // Başarılı silme logu
             await _logService.AddLogAsync(
                 kullaniciId,
-                "Silme",
-                "Basarili",
+                IslemTipleriSabit.Silme,
+                DurumlarSabit.Basarili,
                 $"ID: {id} olan taşınmaz silindi.",
                 GetKullaniciIp());
 

@@ -1,4 +1,6 @@
 ﻿
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TasinmazYonetimi.DTOs;
@@ -27,7 +29,8 @@ namespace TasinmazYonetimi.Controllers
         public async Task<IActionResult> Login(
             [FromBody] LoginDto dto)
         {
-            var sonuc = await _authService.LoginAsync(dto);
+            var sonuc = await _authService.LoginAsync(
+                dto, HttpContext.Connection.RemoteIpAddress?.ToString());
 
             if (sonuc == null)
             {
@@ -38,6 +41,29 @@ namespace TasinmazYonetimi.Controllers
             }
 
             return Ok(sonuc);
+        }
+
+        // Kullanıcı çıkış işlemi
+        [Authorize]
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            var idDegeri = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var tokenId = User.FindFirstValue(JwtRegisteredClaimNames.Jti);
+            var expDegeri = User.FindFirstValue(JwtRegisteredClaimNames.Exp);
+
+            if (!int.TryParse(idDegeri, out var kullaniciId) ||
+                tokenId == null ||
+                !long.TryParse(expDegeri, out var exp))
+                return Unauthorized();
+
+            await _authService.LogoutAsync(
+                kullaniciId,
+                tokenId,
+                DateTimeOffset.FromUnixTimeSeconds(exp).UtcDateTime,
+                HttpContext.Connection.RemoteIpAddress?.ToString());
+
+            return Ok(new { message = "Çıkış işlemi başarılı." });
         }
 
         // Yeni kullanıcı kayıt işlemi

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using TasinmazYonetimi.Constants;
 using TasinmazYonetimi.Data;
 using TasinmazYonetimi.DTOs;
 using TasinmazYonetimi.Interfaces;
@@ -16,32 +17,42 @@ namespace TasinmazYonetimi.Services
         private readonly TasinmazYonetimiContext _context;
         private readonly IPasswordHasher<Kullanicilar> _passwordHasher;
         private readonly IConfiguration _configuration;
+        private readonly ILogService _logService;
 
         public AuthService(
             TasinmazYonetimiContext context,
             IPasswordHasher<Kullanicilar> passwordHasher,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            ILogService logService)
         {
             _context = context;
             _passwordHasher = passwordHasher;
             _configuration = configuration;
+            _logService = logService;
         }
 
-        public async Task<LoginResponseDto?> LoginAsync(LoginDto dto)
+        public async Task<LoginResponseDto?> LoginAsync(LoginDto dto, string? ip)
         {
             var kullanici = await _context.Set<Kullanicilar>()
                 .AsNoTracking()
                 .Include(k => k.Rol)
                 .FirstOrDefaultAsync(k => k.Email == dto.Email);
 
-            if (kullanici == null)
-                return null;
+            // Kullanıcı yok veya parola yanlış
+            if (kullanici == null ||
+                _passwordHasher.VerifyHashedPassword(
+                    kullanici, kullanici.ParolaHash, dto.Parola)
+                    == PasswordVerificationResult.Failed)
+            {
+                await _logService.AddLogAsync(
+                    kullanici?.Id,
+                    IslemTipleriSabit.Giris,
+                    DurumlarSabit.Basarisiz,
+                    $"Başarısız giriş denemesi: {dto.Email}",
+                    ip);
 
-            var sonuc = _passwordHasher.VerifyHashedPassword(
-                kullanici, kullanici.ParolaHash, dto.Parola);
-
-            if (sonuc == PasswordVerificationResult.Failed)
                 return null;
+            }
 
             var jwtKey = _configuration["Jwt:Key"]
                 ?? throw new InvalidOperationException(
@@ -100,6 +111,14 @@ namespace TasinmazYonetimi.Services
                 expires: expiresAt,
                 signingCredentials: credentials);
 
+            // Başarılı giriş logu
+            await _logService.AddLogAsync(
+                kullanici.Id,
+                IslemTipleriSabit.Giris,
+                DurumlarSabit.Basarili,
+                "Kullanıcı sisteme giriş yaptı.",
+                ip);
+
             return new LoginResponseDto
             {
                 Token = new JwtSecurityTokenHandler()
@@ -110,6 +129,29 @@ namespace TasinmazYonetimi.Services
                 Email = kullanici.Email,
                 Rol = kullanici.Rol.RolAdi
             };
+        }
+
+        // Çıkış: token iptal listesine eklenir ve loglanır
+        public async Task LogoutAsync(
+            int kullaniciId,
+            string tokenId,
+            DateTime bitisZamani,
+            string? ip)
+        {
+            _context.Set<IptalEdilenTokenlar>().Add(new IptalEdilenTokenlar
+            {
+                TokenId = tokenId,
+                BitisZamani = bitisZamani
+            });
+
+            await _context.SaveChangesAsync();
+
+            await _logService.AddLogAsync(
+                kullaniciId,
+                IslemTipleriSabit.Cikis,
+                DurumlarSabit.Basarili,
+                "Kullanıcı sistemden çıkış yaptı.",
+                ip);
         }
     }
 }

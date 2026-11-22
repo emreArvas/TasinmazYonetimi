@@ -1,4 +1,6 @@
 
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +11,7 @@ using TasinmazYonetimi.Services;
 using Microsoft.AspNetCore.Identity;
 using TasinmazYonetimi.Models;
 using TasinmazYonetimi.Extensions;
+using TasinmazYonetimi.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -93,6 +96,25 @@ builder.Services
 
             ClockSkew = TimeSpan.FromSeconds(30)
         };
+
+        options.Events = new JwtBearerEvents
+        {
+            // Çıkış yapılmış (iptal edilmiş) token'ları reddet
+            OnTokenValidated = async context =>
+            {
+                var tokenId = context.Principal?
+                    .FindFirstValue(JwtRegisteredClaimNames.Jti);
+
+                var db = context.HttpContext.RequestServices
+                    .GetRequiredService<TasinmazYonetimiContext>();
+
+                var iptalMi = await db.Set<IptalEdilenTokenlar>()
+                    .AnyAsync(t => t.TokenId == tokenId);
+
+                if (tokenId == null || iptalMi)
+                    context.Fail("Oturum sonlandırılmış.");
+            }
+        };
     });
 
 builder.Services.AddAuthorization();
@@ -100,6 +122,9 @@ builder.Services.AddHttpContextAccessor();
 
 
 var app = builder.Build();
+
+// Merkezi hata yakalama (pipeline'ın en başında)
+app.UseMiddleware<HataYakalamaMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
