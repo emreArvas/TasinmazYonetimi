@@ -102,16 +102,39 @@ namespace TasinmazYonetimi.Controllers
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var basarili =
-                await _kullaniciService.DeleteAsync(id);
+            try
+            {
+                var basarili =
+                    await _kullaniciService.DeleteAsync(id);
 
-            if (!basarili)
-                return NotFound(new
+                if (!basarili)
+                    return NotFound(new
+                    {
+                        message = "Kullanıcı bulunamadı."
+                    });
+
+                return NoContent();
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new
                 {
-                    message = "Kullanıcı bulunamadı."
+                    message = ex.Message
                 });
+            }
+        }
 
-            return NoContent();
+        // Rol listesi (Admin / Kullanici)
+        [HttpGet("roller")]
+        public async Task<IActionResult> GetRoller()
+        {
+            var roller = await _kullaniciService.GetRollerAsync();
+
+            return Ok(roller.Select(r => new
+            {
+                r.Id,
+                r.RolAdi
+            }));
         }
     }
 }

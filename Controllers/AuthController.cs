@@ -13,14 +13,10 @@ namespace TasinmazYonetimi.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
-        private readonly IKullaniciService _kullaniciService;
 
-        public AuthController(
-            IAuthService authService,
-            IKullaniciService kullaniciService)
+        public AuthController(IAuthService authService)
         {
             _authService = authService;
-            _kullaniciService = kullaniciService;
         }
 
         // Kullanıcı giriş işlemi
@@ -64,35 +60,6 @@ namespace TasinmazYonetimi.Controllers
                 HttpContext.Connection.RemoteIpAddress?.ToString());
 
             return Ok(new { message = "Çıkış işlemi başarılı." });
-        }
-
-        // Yeni kullanıcı kayıt işlemi
-        [AllowAnonymous]
-        [HttpPost("register")]
-        public async Task<IActionResult> Register(
-            [FromBody] KullaniciCreateDto dto)
-        {
-            try
-            {
-                // Yeni hesaplar normal kullanıcı rolüyle açılır.
-                dto.RolId = 2;
-
-                var kullanici =
-                    await _kullaniciService.CreateAsync(dto);
-
-                return StatusCode(201, new
-                {
-                    message = "Kullanıcı başarıyla oluşturuldu.",
-                    kullaniciId = kullanici.Id
-                });
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new
-                {
-                    message = ex.Message
-                });
-            }
         }
     }
 }

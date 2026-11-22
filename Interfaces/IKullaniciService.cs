@@ -1,4 +1,5 @@
 ﻿using TasinmazYonetimi.DTOs;
+using TasinmazYonetimi.Models;
 
 namespace TasinmazYonetimi.Interfaces
 {
@@ -15,6 +16,8 @@ namespace TasinmazYonetimi.Interfaces
             int id, KullaniciUpdateDto dto);
 
         Task<bool> DeleteAsync(int id);
+
+        Task<List<Roller>> GetRollerAsync();
         Task<bool> UpdateProfilAsync(
     int kullaniciId, ProfilUpdateDto dto);
     }

@@ -43,9 +43,7 @@ namespace TasinmazYonetimi.Services
         {
             var http = _httpContextAccessor.HttpContext;
 
-            var islemYapanId = int.TryParse(
-                http?.User.FindFirstValue(ClaimTypes.NameIdentifier),
-                out var id) ? id : kullaniciId;
+            var islemYapanId = GetGirisYapanId() ?? kullaniciId;
 
             return _logService.AddLogAsync(
                 islemYapanId,
@@ -53,6 +51,15 @@ namespace TasinmazYonetimi.Services
                 durum,
                 aciklama,
                 http?.Connection.RemoteIpAddress?.ToString());
+        }
+
+        // Giriş yapan kullanıcının Id'si (yoksa null)
+        private int? GetGirisYapanId()
+        {
+            return int.TryParse(
+                _httpContextAccessor.HttpContext?.User
+                    .FindFirstValue(ClaimTypes.NameIdentifier),
+                out var id) ? id : null;
         }
 
         public async Task<List<KullaniciDto>> GetAllAsync()
@@ -79,15 +86,17 @@ namespace TasinmazYonetimi.Services
         public async Task<KullaniciDto> CreateAsync(
             KullaniciCreateDto dto)
         {
-            if (dto.RolId != 2)
+            var rolVarMi = await _context.Set<Roller>()
+                .AnyAsync(r => r.Id == dto.RolId);
+
+            if (!rolVarMi)
             {
                 await LogYazAsync(
                     IslemTipleriSabit.YeniKayit,
                     DurumlarSabit.Basarisiz,
                     "Kullanıcı eklenemedi. Geçersiz rol seçimi.");
 
-                throw new ArgumentException(
-                    "Yeni kullanıcı yalnızca Kullanici rolüyle oluşturulabilir.");
+                throw new ArgumentException("Seçilen rol bulunamadı.");
             }
 
             var emailVarMi = await _context.Set<Kullanicilar>()
@@ -106,7 +115,7 @@ namespace TasinmazYonetimi.Services
 
             var kullanici = _mapper.Map<Kullanicilar>(dto);
 
-            kullanici.RolId = 2;
+            kullanici.RolId = dto.RolId!.Value;
 
             kullanici.ParolaHash = _passwordHasher.HashPassword(
                 kullanici, dto.Parola);
@@ -141,13 +150,29 @@ namespace TasinmazYonetimi.Services
 
             if (dto.RolId != kullanici.RolId)
             {
-                await LogYazAsync(
-                    IslemTipleriSabit.Guncelleme,
-                    DurumlarSabit.Basarisiz,
-                    $"ID: {id} olan kullanıcının rolü değiştirilemedi.");
+                // Admin kendi rolünü değiştiremez
+                if (id == GetGirisYapanId())
+                {
+                    await LogYazAsync(
+                        IslemTipleriSabit.Guncelleme,
+                        DurumlarSabit.Basarisiz,
+                        "Kullanıcı kendi rolünü değiştirmeye çalıştı.");
 
-                throw new ArgumentException(
-                    "Kullanıcı rolü bu işlemle değiştirilemez.");
+                    throw new ArgumentException("Kendi rolünüzü değiştiremezsiniz.");
+                }
+
+                var rolVarMi = await _context.Set<Roller>()
+                    .AnyAsync(r => r.Id == dto.RolId);
+
+                if (!rolVarMi)
+                {
+                    await LogYazAsync(
+                        IslemTipleriSabit.Guncelleme,
+                        DurumlarSabit.Basarisiz,
+                        $"ID: {id} olan kullanıcı güncellenemedi. Geçersiz rol.");
+
+                    throw new ArgumentException("Seçilen rol bulunamadı.");
+                }
             }
 
             var emailVarMi = await _context.Set<Kullanicilar>()
@@ -193,6 +218,32 @@ namespace TasinmazYonetimi.Services
                 return false;
             }
 
+            // Admin kendini silemez
+            if (id == GetGirisYapanId())
+            {
+                await LogYazAsync(
+                    IslemTipleriSabit.Silme,
+                    DurumlarSabit.Basarisiz,
+                    "Kullanıcı kendi hesabını silmeye çalıştı.");
+
+                throw new ArgumentException("Kendi hesabınızı silemezsiniz.");
+            }
+
+            // Taşınmazı olan kullanıcı silinemez
+            var tasinmaziVarMi = await _context.Set<Tasinmazlar>()
+                .AnyAsync(t => t.KullaniciId == id);
+
+            if (tasinmaziVarMi)
+            {
+                await LogYazAsync(
+                    IslemTipleriSabit.Silme,
+                    DurumlarSabit.Basarisiz,
+                    $"ID: {id} olan kullanıcı silinemedi. Kullanıcıya ait taşınmaz var.");
+
+                throw new ArgumentException(
+                    "Bu kullanıcıya ait taşınmazlar olduğu için silinemez.");
+            }
+
             _context.Set<Kullanicilar>().Remove(kullanici);
             await _context.SaveChangesAsync();
 
@@ -202,6 +253,15 @@ namespace TasinmazYonetimi.Services
                 $"ID: {id} olan kullanıcı silindi.");
 
             return true;
+        }
+
+        // Rol combobox'ı için rol listesi
+        public async Task<List<Roller>> GetRollerAsync()
+        {
+            return await _context.Set<Roller>()
+                .AsNoTracking()
+                .OrderBy(r => r.Id)
+                .ToListAsync();
         }
 
         public async Task<bool> UpdateProfilAsync(
