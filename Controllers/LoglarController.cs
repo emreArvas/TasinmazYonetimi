@@ -1,6 +1,7 @@
 ﻿
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TasinmazYonetimi.DTOs;
 using TasinmazYonetimi.Interfaces;
 
 namespace TasinmazYonetimi.Controllers
@@ -44,6 +45,42 @@ namespace TasinmazYonetimi.Controllers
                     kullaniciId);
 
             return Ok(loglar);
+        }
+
+        // Logları filtrele ve sayfala
+        [HttpGet("filtrele")]
+        public async Task<ActionResult<PagedResultDto<LogDto>>> GetFiltered(
+            [FromQuery] LogFilterDto filter)
+        {
+            var sonuc = await _logService.GetFilteredAsync(filter);
+
+            return Ok(sonuc);
+        }
+
+        // Durum listesi (Başarılı / Başarısız)
+        [HttpGet("durumlar")]
+        public async Task<IActionResult> GetDurumlar()
+        {
+            var durumlar = await _logService.GetDurumlarAsync();
+
+            return Ok(durumlar.Select(d => new
+            {
+                d.Id,
+                d.DurumAdi
+            }));
+        }
+
+        // İşlem tipi listesi (Yeni Kayıt, Güncelleme, Silme, ...)
+        [HttpGet("islem-tipleri")]
+        public async Task<IActionResult> GetIslemTipleri()
+        {
+            var islemTipleri = await _logService.GetIslemTipleriAsync();
+
+            return Ok(islemTipleri.Select(i => new
+            {
+                i.Id,
+                i.IslemTipiAdi
+            }));
         }
     }
 }

@@ -49,6 +49,108 @@ namespace TasinmazYonetimi.Services
             return _mapper.Map<List<LogDto>>(loglar);
         }
 
+        // Ortak log filtre sorgusu (liste ve Excel aynı filtreyi kullanır)
+        private IQueryable<Loglar> FiltreliSorgu(LogFilterDto filter)
+        {
+            var query = _context.Set<Loglar>()
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (filter.KullaniciId.HasValue)
+                query = query.Where(l => l.KullaniciId == filter.KullaniciId.Value);
+
+            if (filter.DurumId.HasValue)
+                query = query.Where(l => l.DurumId == filter.DurumId.Value);
+
+            if (filter.IslemTipiId.HasValue)
+                query = query.Where(l => l.IslemTipiId == filter.IslemTipiId.Value);
+
+            // Açıklama: büyük/küçük harf duyarsız arama (PostgreSQL ILIKE)
+            if (!string.IsNullOrWhiteSpace(filter.Aciklama))
+            {
+                var aciklama = $"%{filter.Aciklama.Trim()}%";
+
+                query = query.Where(l =>
+                    l.Aciklama != null &&
+                    EF.Functions.ILike(l.Aciklama, aciklama));
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter.KullaniciIp))
+            {
+                var ip = filter.KullaniciIp.Trim();
+
+                query = query.Where(l =>
+                    l.KullaniciIp != null &&
+                    l.KullaniciIp.Contains(ip));
+            }
+
+            if (filter.BaslangicTarihi.HasValue)
+            {
+                var baslangic = DateTime.SpecifyKind(
+                    filter.BaslangicTarihi.Value.Date, DateTimeKind.Utc);
+
+                query = query.Where(l => l.TarihSaat >= baslangic);
+            }
+
+            if (filter.BitisTarihi.HasValue)
+            {
+                // Bitiş gününü de dahil etmek için ertesi günün başına kadar
+                var bitis = DateTime.SpecifyKind(
+                    filter.BitisTarihi.Value.Date.AddDays(1), DateTimeKind.Utc);
+
+                query = query.Where(l => l.TarihSaat < bitis);
+            }
+
+            return query;
+        }
+
+        // Logları filtrele ve sayfala (en yeni kayıt en üstte)
+        public async Task<PagedResultDto<LogDto>> GetFilteredAsync(
+            LogFilterDto filter)
+        {
+            var query = FiltreliSorgu(filter);
+
+            var totalCount = await query.CountAsync();
+
+            var pageNumber = Math.Max(1, filter.PageNumber);
+            var pageSize = Math.Clamp(filter.PageSize, 1, 100);
+
+            var loglar = await query
+                .OrderByDescending(l => l.TarihSaat)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Include(l => l.Durum)
+                .Include(l => l.IslemTipi)
+                .Include(l => l.Kullanici)
+                .ToListAsync();
+
+            return new PagedResultDto<LogDto>
+            {
+                Items = _mapper.Map<List<LogDto>>(loglar),
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+        }
+
+        // Filtre combobox'ları için durum listesi
+        public async Task<List<Durumlar>> GetDurumlarAsync()
+        {
+            return await _context.Set<Durumlar>()
+                .AsNoTracking()
+                .OrderBy(d => d.Id)
+                .ToListAsync();
+        }
+
+        // Filtre combobox'ları için işlem tipi listesi
+        public async Task<List<IslemTipleri>> GetIslemTipleriAsync()
+        {
+            return await _context.Set<IslemTipleri>()
+                .AsNoTracking()
+                .OrderBy(i => i.Id)
+                .ToListAsync();
+        }
+
         // Yeni log kaydı oluştur
         public async Task AddLogAsync(
             int? kullaniciId,

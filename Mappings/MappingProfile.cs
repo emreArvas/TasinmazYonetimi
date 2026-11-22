@@ -67,7 +67,10 @@ namespace TasinmazYonetimi.Mappings
                 .ForMember(
                     dest => dest.IslemTipiAdi,
                     opt => opt.MapFrom(src =>
-                        src.IslemTipi.IslemTipiAdi));
+                        src.IslemTipi.IslemTipiAdi))
+                .ForMember(
+                    dest => dest.KullaniciEmail,
+                    opt => opt.MapFrom(src => src.Kullanici!.Email));
 
         }
     }

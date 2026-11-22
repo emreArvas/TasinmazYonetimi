@@ -1,4 +1,5 @@
 ﻿using TasinmazYonetimi.DTOs;
+using TasinmazYonetimi.Models;
 
 namespace TasinmazYonetimi.Interfaces
 {
@@ -8,6 +9,13 @@ namespace TasinmazYonetimi.Interfaces
 
         Task<List<LogDto>> GetByKullaniciIdAsync(
             int kullaniciId);
+
+        Task<PagedResultDto<LogDto>> GetFilteredAsync(
+            LogFilterDto filter);
+
+        Task<List<Durumlar>> GetDurumlarAsync();
+
+        Task<List<IslemTipleri>> GetIslemTipleriAsync();
 
         Task AddLogAsync(
             int? kullaniciId,

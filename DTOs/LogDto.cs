@@ -9,5 +9,6 @@
         public string? Aciklama { get; set; }
         public DateTime TarihSaat { get; set; }
         public string? KullaniciIp { get; set; }
+        public string? KullaniciEmail { get; set; }
     }
 }
