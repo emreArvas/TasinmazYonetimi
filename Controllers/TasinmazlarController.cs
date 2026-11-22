@@ -142,5 +142,29 @@ namespace TasinmazYonetimi.Controllers
 
             return NoContent();
         }
+
+
+        // Taşınmazları filtrele ve sayfala
+        [HttpGet("filtrele")]
+        public async Task<ActionResult<PagedResultDto<TasinmazDto>>> GetFiltered(
+            [FromQuery] TasinmazFilterDto filter)
+        {
+            var kullaniciId = GetKullaniciId();
+
+            // JWT içerisinden kullanıcı ID'si alınamadıysa
+            if (!kullaniciId.HasValue)
+            {
+                return Unauthorized(
+                    "Kullanıcı kimliği doğrulanamadı.");
+            }
+
+            var sonuc = await _tasinmazService.GetFilteredAsync(
+                filter,
+                kullaniciId.Value);
+
+            return Ok(sonuc);
+        }
+
+
     }
 }

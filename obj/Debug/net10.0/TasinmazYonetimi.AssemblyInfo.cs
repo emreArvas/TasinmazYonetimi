@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TasinmazYonetimi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+07c6b4227ff6ff7b5b63eb0547b95ed8a2fc71bc")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b09c393d41ad249265f51d70803cd4a884645a2e")]
 [assembly: System.Reflection.AssemblyProductAttribute("TasinmazYonetimi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TasinmazYonetimi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
